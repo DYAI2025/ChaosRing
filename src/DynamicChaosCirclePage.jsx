@@ -34,6 +34,7 @@ const CSS = `
   --color-amber: #d68c3c;
   --color-violet: #8f6cff;
   --color-blue: #7aa7ff;
+  --color-danger: #ff6f61;
   --font-display: "Inter Tight", "Neue Haas Grotesk Display", "Suisse Intl", "Arial Narrow", sans-serif;
   --font-body: "Inter", "Suisse Intl", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", "SF Mono", monospace;
@@ -196,6 +197,33 @@ body { margin: 0; }
   font-size: 9px;
   letter-spacing: 0.15em;
 }
+.output-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.output-card {
+  border: 1px solid var(--color-line);
+  background: rgba(255,255,255,0.035);
+  padding: 10px;
+}
+.output-value {
+  color: var(--color-gold);
+  font-family: var(--font-mono);
+  font-size: 16px;
+}
+.output-bar {
+  height: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: rgba(244,239,231,0.08);
+}
+.output-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-gold), var(--color-danger));
+}
 .controls-panel {
   position: fixed;
   z-index: 4;
@@ -231,6 +259,17 @@ body { margin: 0; }
   letter-spacing: 0.1em;
 }
 .switch-row input { accent-color: var(--color-gold); }
+.control-note {
+  margin-top: 12px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 12px;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
 .reset-button {
   display: inline-flex;
   align-items: center;
@@ -363,6 +402,17 @@ function MiniMetric({ label, value, decimals = 2 }) {
   );
 }
 
+function OutputCard({ label, value }) {
+  const safeValue = clamp(value, 0, 1);
+  return (
+    <div className="output-card">
+      <div className="metric-label">{label}</div>
+      <div className="output-value">{Math.round(safeValue * 100)}%</div>
+      <div className="output-bar" aria-hidden="true"><span style={{ width: `${safeValue * 100}%` }} /></div>
+    </div>
+  );
+}
+
 function ControlRange({ label, value, onChange, min = 0, max = 100, percent = true }) {
   const display = percent ? `${Math.round(value * 100)}%` : String(value);
   const inputValue = percent ? Math.round(value * 100) : value;
@@ -400,6 +450,15 @@ export default function DynamicChaosCirclePage() {
     ],
     []
   );
+
+  const telemetry = useMemo(() => {
+    const divergence = clamp(controls.intensity * 0.36 + controls.chaos * 0.31 + controls.spikes * 0.23 + controls.cursorForce * 0.1, 0, 1);
+    const coherence = clamp(1 - controls.chaos * 0.48 + controls.breath * 0.18 - controls.spikes * 0.1, 0, 1);
+    const energy = clamp(controls.speed * 0.34 + controls.intensity * 0.26 + controls.lineCount / MAX_LAYERS * 0.22 + (controls.autoEscalate ? 0.18 : 0), 0, 1);
+    const volatility = clamp(controls.spikes * 0.42 + controls.chaos * 0.38 + controls.speed * 0.2, 0, 1);
+
+    return { divergence, coherence, energy, volatility };
+  }, [controls]);
 
   const resetControls = () => setControls({ ...DEFAULT_CONTROLS });
 
@@ -656,11 +715,12 @@ export default function DynamicChaosCirclePage() {
           <div className="chip-row">
             <span className="mono-chip gold">CONFIDENTIAL MOTION OBJECT</span>
             <span className="mono-chip">LIVE / CURSOR FIELD</span>
-            <span className="mono-chip">H: {(0.5 + controls.intensity).toFixed(4)}</span>
+            <span className="mono-chip">RAILWAY READY</span>
+            <span className="mono-chip">D: {telemetry.divergence.toFixed(4)}</span>
           </div>
           <h1 className="title">CHAOS RING</h1>
           <p className="subclaim">
-            Der Kreis ist wieder das Hauptobjekt: groß, zentral, eigenanimiert, chaotisch eskalierend und direkt durch Cursor, Klick und Spacebar steuerbar.
+            Ein erster deploybarer Prototyp für den Chaosring: visuelles Kernobjekt, normalisierte Inputs und direkt sichtbare Output-Telemetrie als Grundlage für spätere Datenfeeds, Watch-Komplikationen und Overlays.
           </p>
           <div className="mobile-hint">Move cursor. Click for ripple. Space for impulse. R for reset.</div>
         </div>
@@ -668,9 +728,15 @@ export default function DynamicChaosCirclePage() {
         <aside className="hud-panel">
           <div className="kicker">OBJECT TELEMETRY</div>
           <div className="metric-stack">
-            <MiniMetric value={0.94} label="coherence" decimals={2} />
+            <MiniMetric value={telemetry.coherence} label="coherence" decimals={2} />
             <MiniMetric value={SEGMENTS} label="samples" decimals={0} />
             <MiniMetric value={controls.lineCount} label="layers" decimals={0} />
+          </div>
+          <div className="output-grid">
+            <OutputCard label="divergenz" value={telemetry.divergence} />
+            <OutputCard label="energie" value={telemetry.energy} />
+            <OutputCard label="volatilität" value={telemetry.volatility} />
+            <OutputCard label="kohärenz" value={telemetry.coherence} />
           </div>
           <div className="status-line">Input stack: autonomous noise / spike field / pointer proximity / impulse decay.</div>
         </aside>
@@ -679,7 +745,7 @@ export default function DynamicChaosCirclePage() {
       <aside className="formula-panel">
         <div className="kicker">DETERMINISTIC ENGINE</div>
         <div className="formula">r(θ,t)=R+n(θ,t)+s(θ,t)+c(θ,p)+i(t)</div>
-        <div className="status-line">Die Formel ist nur Kontext. Das Objekt bleibt vorn. Endlich.</div>
+        <div className="status-line">Renderer-Kern: Datenfeeds sollen später nur normalisierte Parameter liefern; der Ring bleibt deterministisch, performant und als Web-/Watch-Objekt wiederverwendbar.</div>
       </aside>
 
       <aside className="controls-panel">
@@ -698,6 +764,10 @@ export default function DynamicChaosCirclePage() {
           <span>Auto escalation</span>
           <input type="checkbox" checked={controls.autoEscalate} onChange={(event) => setControls((current) => ({ ...current, autoEscalate: event.target.checked }))} />
         </label>
+
+        <div className="control-note">
+          First iteration: Eingaben bleiben bewusst slider-basiert. Der nächste Schritt ist ein Adapter, der Live-Daten in dieselben Parameter mappt.
+        </div>
       </aside>
     </div>
   );
