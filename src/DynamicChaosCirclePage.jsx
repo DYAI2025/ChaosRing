@@ -19,6 +19,84 @@ const DEFAULT_CONTROLS = Object.freeze({
   autoEscalate: true,
 });
 
+const PRESETS = Object.freeze({
+  RUHIG: { intensity: 0.18, chaos: 0.12, spikes: 0.08, speed: 0.22, cursorForce: 0.45, breath: 0.88, lineCount: 3, autoEscalate: false },
+  STURM: { intensity: 0.92, chaos: 0.88, spikes: 0.94, speed: 0.85, cursorForce: 0.95, breath: 0.12, lineCount: 9, autoEscalate: true },
+  PULS:  { intensity: 0.62, chaos: 0.38, spikes: 0.28, speed: 0.55, cursorForce: 0.72, breath: 0.96, lineCount: 5, autoEscalate: true },
+});
+
+const BG_PRESETS = [
+  {
+    key: "NACHT",
+    bg: "#050508",
+    bgDeep: "#010104",
+    isLight: false,
+    radials: "radial-gradient(circle at 50% 48%, rgba(200,164,93,0.18), transparent 26%), radial-gradient(circle at 50% 52%, rgba(143,108,255,0.12), transparent 42%), radial-gradient(circle at 22% 18%, rgba(122,167,255,0.09), transparent 31%)",
+    textColor: "#f4efe7",
+    textMuted: "rgba(244,239,231,0.66)",
+    textFaint: "rgba(244,239,231,0.38)",
+    lineColor: "rgba(244,239,231,0.16)",
+    lineStrong: "rgba(244,239,231,0.34)",
+    surface: "rgba(255,255,255,0.045)",
+    surfaceStrong: "rgba(255,255,255,0.075)",
+    gold: "#c8a45d",
+    amber: "#d68c3c",
+    panelBg: "rgba(1,1,4,0.56)",
+    chipBg: "rgba(1,1,4,0.48)",
+    gridColor: "rgba(244,239,231,0.035)",
+    gridColorH: "rgba(244,239,231,0.028)",
+    watermark: "rgba(244,239,231,0.045)",
+  },
+  {
+    key: "HELL",
+    bg: "#f0ebe2",
+    bgDeep: "#e4ddd2",
+    isLight: true,
+    radials: "radial-gradient(circle at 50% 48%, rgba(120,80,20,0.07), transparent 26%), radial-gradient(circle at 50% 52%, rgba(80,50,140,0.05), transparent 42%), radial-gradient(circle at 22% 18%, rgba(40,80,140,0.04), transparent 31%)",
+    textColor: "#111111",
+    textMuted: "rgba(20,15,8,0.66)",
+    textFaint: "rgba(20,15,8,0.38)",
+    lineColor: "rgba(20,15,8,0.16)",
+    lineStrong: "rgba(20,15,8,0.34)",
+    surface: "rgba(0,0,0,0.04)",
+    surfaceStrong: "rgba(0,0,0,0.07)",
+    gold: "#7a4500",
+    amber: "#8a3c00",
+    panelBg: "rgba(230,222,210,0.82)",
+    chipBg: "rgba(230,222,210,0.72)",
+    gridColor: "rgba(20,15,8,0.04)",
+    gridColorH: "rgba(20,15,8,0.03)",
+    watermark: "rgba(20,15,8,0.06)",
+  },
+  {
+    key: "OZEAN",
+    bg: "#040c18",
+    bgDeep: "#020810",
+    isLight: false,
+    radials: "radial-gradient(circle at 50% 48%, rgba(40,140,200,0.18), transparent 26%), radial-gradient(circle at 50% 52%, rgba(20,80,180,0.12), transparent 42%), radial-gradient(circle at 22% 18%, rgba(80,170,220,0.09), transparent 31%)",
+    textColor: "#ddf0ff",
+    textMuted: "rgba(200,230,255,0.66)",
+    textFaint: "rgba(200,230,255,0.38)",
+    lineColor: "rgba(120,180,255,0.16)",
+    lineStrong: "rgba(120,180,255,0.34)",
+    surface: "rgba(60,120,200,0.06)",
+    surfaceStrong: "rgba(60,120,200,0.10)",
+    gold: "#5bc0e8",
+    amber: "#4aacdc",
+    panelBg: "rgba(2,8,20,0.72)",
+    chipBg: "rgba(2,8,20,0.60)",
+    gridColor: "rgba(120,180,255,0.03)",
+    gridColorH: "rgba(120,180,255,0.025)",
+    watermark: "rgba(180,220,255,0.045)",
+  },
+];
+
+function ringLayerColor(layerIndex, isLight) {
+  const isGoldLayer = layerIndex % 3 === 0;
+  if (isLight) return isGoldLayer ? 0x6b3d00 : 0x111111;
+  return isGoldLayer ? 0xc8a45d : 0xf4efe7;
+}
+
 const CSS = `
 :root {
   --color-bg: #050508;
@@ -35,6 +113,11 @@ const CSS = `
   --color-violet: #8f6cff;
   --color-blue: #7aa7ff;
   --color-danger: #ff6f61;
+  --color-grid: rgba(244,239,231,0.035);
+  --color-grid-h: rgba(244,239,231,0.028);
+  --color-watermark: rgba(244,239,231,0.045);
+  --panel-bg: rgba(1,1,4,0.56);
+  --chip-bg: rgba(1,1,4,0.48);
   --font-display: "Inter Tight", "Neue Haas Grotesk Display", "Suisse Intl", "Arial Narrow", sans-serif;
   --font-body: "Inter", "Suisse Intl", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", "SF Mono", monospace;
@@ -45,11 +128,6 @@ body { margin: 0; }
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 48%, rgba(200,164,93,0.18), transparent 26%),
-    radial-gradient(circle at 50% 52%, rgba(143,108,255,0.12), transparent 42%),
-    radial-gradient(circle at 22% 18%, rgba(122,167,255,0.09), transparent 31%),
-    linear-gradient(180deg, var(--color-bg), var(--color-bg-deep));
   color: var(--color-text);
   font-family: var(--font-body);
 }
@@ -60,10 +138,11 @@ body { margin: 0; }
   pointer-events: none;
   opacity: 0.36;
   background-image:
-    linear-gradient(rgba(244,239,231,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(244,239,231,0.028) 1px, transparent 1px);
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid-h) 1px, transparent 1px);
   background-size: 52px 52px;
   mask-image: radial-gradient(circle at center, black, transparent 82%);
+  transition: opacity 0.5s ease;
 }
 .chaos-root::after {
   content: "CHAOS RING";
@@ -73,7 +152,7 @@ body { margin: 0; }
   transform: translate(-50%, -50%);
   z-index: 0;
   pointer-events: none;
-  color: rgba(244,239,231,0.045);
+  color: var(--color-watermark);
   filter: blur(14px);
   font-family: var(--font-display);
   font-size: clamp(84px, 20vw, 280px);
@@ -82,6 +161,7 @@ body { margin: 0; }
   line-height: 0.78;
   text-transform: uppercase;
   white-space: nowrap;
+  transition: opacity 0.5s ease;
 }
 .ring-stage {
   position: fixed;
@@ -91,6 +171,62 @@ body { margin: 0; }
 .ring-stage canvas {
   cursor: crosshair;
   display: block;
+}
+.hud-top,
+.formula-panel,
+.controls-panel {
+  transition: opacity 0.5s ease;
+}
+.focus-mode .hud-top,
+.focus-mode .formula-panel,
+.focus-mode .controls-panel {
+  opacity: 0;
+  pointer-events: none !important;
+}
+.focus-mode::after {
+  opacity: 0 !important;
+}
+.focus-mode::before {
+  opacity: 0 !important;
+}
+.float-controls {
+  position: fixed;
+  z-index: 10;
+  bottom: clamp(18px, 3vw, 42px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
+}
+.float-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line-strong);
+  background: var(--panel-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--color-text-muted);
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.float-btn:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+.float-btn.active {
+  border-color: var(--color-gold);
+  background: rgba(200,164,93,0.12);
+  color: var(--color-gold);
 }
 .hud-top {
   position: fixed;
@@ -150,8 +286,9 @@ body { margin: 0; }
   align-items: center;
   min-height: 30px;
   border: 1px solid var(--color-line);
-  background: rgba(1,1,4,0.48);
+  background: var(--chip-bg);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: var(--color-text-muted);
   padding: 7px 10px;
   border-radius: 999px;
@@ -160,14 +297,15 @@ body { margin: 0; }
 }
 .mono-chip.gold {
   color: var(--color-gold);
-  border-color: rgba(200,164,93,0.48);
+  border-color: var(--color-line-strong);
 }
 .hud-panel,
 .controls-panel,
 .formula-panel {
   border: 1px solid var(--color-line);
-  background: rgba(1,1,4,0.56);
+  background: var(--panel-bg);
   backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 .hud-panel {
   min-width: 240px;
@@ -182,7 +320,7 @@ body { margin: 0; }
 }
 .metric {
   border: 1px solid var(--color-line);
-  background: rgba(255,255,255,0.035);
+  background: var(--color-surface);
   padding: 10px;
 }
 .metric-value {
@@ -205,7 +343,7 @@ body { margin: 0; }
 }
 .output-card {
   border: 1px solid var(--color-line);
-  background: rgba(255,255,255,0.035);
+  background: var(--color-surface);
   padding: 10px;
 }
 .output-value {
@@ -217,7 +355,7 @@ body { margin: 0; }
   height: 3px;
   margin-top: 8px;
   overflow: hidden;
-  background: rgba(244,239,231,0.08);
+  background: var(--color-surface-strong);
 }
 .output-bar span {
   display: block;
@@ -274,13 +412,45 @@ body { margin: 0; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(200,164,93,0.48);
-  background: rgba(200,164,93,0.08);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
   padding: 8px 10px;
   color: var(--color-gold);
   font-size: 10px;
   letter-spacing: 0.12em;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.reset-button:hover {
+  background: var(--color-surface-strong);
+}
+.preset-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 12px;
+}
+.preset-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 7px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.preset-btn:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: var(--color-surface-strong);
 }
 .formula-panel {
   position: fixed;
@@ -335,6 +505,20 @@ body { margin: 0; }
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
+  .float-controls {
+    top: 14px;
+    right: 14px;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .float-btn {
+    padding: 6px 10px;
+    font-size: 9px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .chaos-root::after { filter: none; }
@@ -373,6 +557,8 @@ function runTinySelfTests() {
   console.assert(DEFAULT_CONTROLS.autoEscalate === true, "object escalates autonomously by default");
   console.assert(SEGMENTS > 64, "renderer has enough contour samples");
   console.assert(MAX_LAYERS >= 6, "renderer has enough visible line layers");
+  console.assert(BG_PRESETS.length >= 2, "at least two background themes defined");
+  console.assert(Object.keys(PRESETS).length >= 3, "at least three ring presets defined");
 }
 
 runTinySelfTests();
@@ -432,12 +618,35 @@ export default function DynamicChaosCirclePage() {
   const pointerRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0, inside: false, pressure: 0 });
   const velocityRef = useRef(0);
   const lastPointerRef = useRef({ x: 0, y: 0 });
+  const linesRef = useRef([]);
+  const bgIndexRef = useRef(0);
+  const spectrumModeRef = useRef(false);
+
   const [controls, setControls] = useState({ ...DEFAULT_CONTROLS });
   const controlsRef = useRef(controls);
 
+  const [focusMode, setFocusMode] = useState(false);
+  const [bgIndex, setBgIndex] = useState(0);
+  const [spectrumMode, setSpectrumMode] = useState(false);
+
+  useEffect(() => { controlsRef.current = controls; }, [controls]);
+  useEffect(() => { bgIndexRef.current = bgIndex; }, [bgIndex]);
+  useEffect(() => { spectrumModeRef.current = spectrumMode; }, [spectrumMode]);
+
+  // Update ring materials when background or spectrum mode changes.
   useEffect(() => {
-    controlsRef.current = controls;
-  }, [controls]);
+    const lines = linesRef.current;
+    if (lines.length === 0) return;
+    const preset = BG_PRESETS[bgIndex];
+    const blending = preset.isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
+    lines.forEach((line, i) => {
+      if (!spectrumMode) {
+        line.material.color.setHex(ringLayerColor(i, preset.isLight));
+      }
+      line.material.blending = blending;
+      line.material.needsUpdate = true;
+    });
+  }, [bgIndex, spectrumMode]);
 
   const labels = useMemo(
     () => [
@@ -456,12 +665,36 @@ export default function DynamicChaosCirclePage() {
     const coherence = clamp(1 - controls.chaos * 0.48 + controls.breath * 0.18 - controls.spikes * 0.1, 0, 1);
     const energy = clamp(controls.speed * 0.34 + controls.intensity * 0.26 + controls.lineCount / MAX_LAYERS * 0.22 + (controls.autoEscalate ? 0.18 : 0), 0, 1);
     const volatility = clamp(controls.spikes * 0.42 + controls.chaos * 0.38 + controls.speed * 0.2, 0, 1);
-
     return { divergence, coherence, energy, volatility };
   }, [controls]);
 
   const resetControls = () => setControls({ ...DEFAULT_CONTROLS });
 
+  const applyPreset = (name) => setControls({ ...DEFAULT_CONTROLS, ...PRESETS[name] });
+
+  // Keyboard shortcut handler (separate from THREE effect for clean closure access).
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const key = event.key.toLowerCase();
+      if (key === "r") {
+        ripplesRef.current.length = 0;
+        setControls({ ...DEFAULT_CONTROLS });
+      }
+      if (event.key === " ") {
+        event.preventDefault();
+        const { x, y } = pointerRef.current;
+        ripplesRef.current.push({ x, y, born: performance.now() / 1000, force: 1.2 });
+        if (ripplesRef.current.length > 12) ripplesRef.current.shift();
+      }
+      if (key === "f") setFocusMode((m) => !m);
+      if (key === "b") setBgIndex((i) => (i + 1) % BG_PRESETS.length);
+      if (key === "s") setSpectrumMode((m) => !m);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // THREE.js renderer lifecycle (mounts once, cleans up on unmount).
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
@@ -475,7 +708,7 @@ export default function DynamicChaosCirclePage() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x000000, 0);
-    renderer.setSize(mount.clientWidth || 1, mount.clientHeight || 1);
+    renderer.setSize(Math.max(mount.clientWidth || 1, 1), Math.max(mount.clientHeight || 1, 1));
     mount.appendChild(renderer.domElement);
 
     const group = new THREE.Group();
@@ -508,6 +741,8 @@ export default function DynamicChaosCirclePage() {
       group.add(line);
       lines.push(line);
     }
+
+    linesRef.current = lines;
 
     for (let i = 0; i <= SEGMENTS; i += 1) {
       const angle = (i / SEGMENTS) * TAU;
@@ -565,20 +800,8 @@ export default function DynamicChaosCirclePage() {
       pointerRef.current.pressure = 1.9;
     };
 
-    const onKeyDown = (event) => {
-      if (event.key.toLowerCase() === "r") {
-        ripplesRef.current.length = 0;
-        resetControls();
-      }
-      if (event.key === " ") {
-        event.preventDefault();
-        addRipple(pointerRef.current.x, pointerRef.current.y, 1.2);
-      }
-    };
-
     updateSize();
     window.addEventListener("resize", updateSize);
-    window.addEventListener("keydown", onKeyDown);
     renderer.domElement.addEventListener("pointermove", onPointerMove);
     renderer.domElement.addEventListener("pointerleave", onPointerLeave);
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
@@ -599,9 +822,23 @@ export default function DynamicChaosCirclePage() {
       const spikeAmount = c.spikes + escalation * 0.6;
       const time = now * (0.35 + c.speed * 1.95);
 
+      // Expire old ripples once per frame (not per layer – fixes original bug).
+      ripplesRef.current = ripplesRef.current.filter((r) => now - r.born < 2.8);
+
+      const isLight = BG_PRESETS[bgIndexRef.current].isLight;
+      const useSpectrum = spectrumModeRef.current;
+
       lines.forEach((line, lineIndex) => {
         line.visible = lineIndex < Math.round(c.lineCount);
         if (!line.visible) return;
+
+        // Spectrum color: each layer cycles through hue with slow rotation.
+        if (useSpectrum) {
+          const hue = ((lineIndex / MAX_LAYERS) + now * 0.04) % 1;
+          const sat = isLight ? 0.88 : 0.82;
+          const lit = isLight ? 0.26 : 0.60;
+          line.material.color.setHSL(hue, sat, lit);
+        }
 
         const positions = line.geometry.attributes.position.array;
         const { seed, radiusOffset, wobblePhase } = line.userData;
@@ -640,14 +877,12 @@ export default function DynamicChaosCirclePage() {
           let rippleForce = 0;
           for (const ripple of ripplesRef.current) {
             const age = now - ripple.born;
-            if (age > 2.8) continue;
             const rx = p.ux * p.baseRadius - ripple.x;
             const ry = p.uy * p.baseRadius - ripple.y;
             const rd = Math.sqrt(rx * rx + ry * ry);
             const ring = Math.exp(-Math.pow(rd - age * 0.9, 2) * 42);
             rippleForce += ring * Math.exp(-age * 1.25) * ripple.force * 0.18;
           }
-          ripplesRef.current = ripplesRef.current.filter((r) => now - r.born < 2.8);
 
           const radialOffset =
             radiusOffset +
@@ -686,7 +921,6 @@ export default function DynamicChaosCirclePage() {
     return () => {
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener("resize", updateSize);
-      window.removeEventListener("keydown", onKeyDown);
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerleave", onPointerLeave);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
@@ -696,6 +930,7 @@ export default function DynamicChaosCirclePage() {
       });
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+      linesRef.current = [];
     };
   }, []);
 
@@ -704,8 +939,31 @@ export default function DynamicChaosCirclePage() {
     setControls((current) => ({ ...current, [key]: value }));
   };
 
+  const preset = BG_PRESETS[bgIndex];
+  const nextBgKey = BG_PRESETS[(bgIndex + 1) % BG_PRESETS.length].key;
+
+  const rootStyle = {
+    background: `${preset.radials}, linear-gradient(180deg, ${preset.bg}, ${preset.bgDeep})`,
+    "--color-bg": preset.bg,
+    "--color-bg-deep": preset.bgDeep,
+    "--color-text": preset.textColor,
+    "--color-text-muted": preset.textMuted,
+    "--color-text-faint": preset.textFaint,
+    "--color-line": preset.lineColor,
+    "--color-line-strong": preset.lineStrong,
+    "--color-surface": preset.surface,
+    "--color-surface-strong": preset.surfaceStrong,
+    "--color-gold": preset.gold,
+    "--color-amber": preset.amber,
+    "--panel-bg": preset.panelBg,
+    "--chip-bg": preset.chipBg,
+    "--color-grid": preset.gridColor,
+    "--color-grid-h": preset.gridColorH,
+    "--color-watermark": preset.watermark,
+  };
+
   return (
-    <div className="chaos-root">
+    <div className={`chaos-root${focusMode ? " focus-mode" : ""}`} style={rootStyle}>
       <style>{CSS}</style>
 
       <div ref={mountRef} className="ring-stage" aria-label="Dynamischer Chaoskreis" />
@@ -722,7 +980,7 @@ export default function DynamicChaosCirclePage() {
           <p className="subclaim">
             Ein erster deploybarer Prototyp für den Chaosring: visuelles Kernobjekt, normalisierte Inputs und direkt sichtbare Output-Telemetrie als Grundlage für spätere Datenfeeds, Watch-Komplikationen und Overlays.
           </p>
-          <div className="mobile-hint">Move cursor. Click for ripple. Space for impulse. R for reset.</div>
+          <div className="mobile-hint">Cursor bewegen. Klick für Welle. Leertaste für Impuls. R = Reset. F = Fokus. B = Hintergrund. S = Spektrum.</div>
         </div>
 
         <aside className="hud-panel">
@@ -754,6 +1012,14 @@ export default function DynamicChaosCirclePage() {
           <button type="button" onClick={resetControls} className="reset-button">RESET</button>
         </div>
 
+        <div className="preset-row">
+          {Object.keys(PRESETS).map((name) => (
+            <button key={name} type="button" className="preset-btn" onClick={() => applyPreset(name)}>
+              {name}
+            </button>
+          ))}
+        </div>
+
         {labels.map(([key, label]) => (
           <ControlRange key={key} label={label} value={controls[key]} onChange={(next) => updateControl(key, next)} />
         ))}
@@ -766,9 +1032,37 @@ export default function DynamicChaosCirclePage() {
         </label>
 
         <div className="control-note">
-          First iteration: Eingaben bleiben bewusst slider-basiert. Der nächste Schritt ist ein Adapter, der Live-Daten in dieselben Parameter mappt.
+          Schnellstart: RUHIG / STURM / PULS. Tastatur: F=Fokus, B=Hintergrund, S=Spektrum, R=Reset, Leertaste=Impuls.
         </div>
       </aside>
+
+      {/* Float controls – always visible, survive focus mode */}
+      <div className="float-controls" role="toolbar" aria-label="Ansichtssteuerung">
+        <button
+          type="button"
+          className={`float-btn${focusMode ? " active" : ""}`}
+          onClick={() => setFocusMode((m) => !m)}
+          title="Fokus-Modus ein/aus (F)"
+        >
+          {focusMode ? "UI AN" : "UI AUS"}
+        </button>
+        <button
+          type="button"
+          className="float-btn"
+          onClick={() => setBgIndex((i) => (i + 1) % BG_PRESETS.length)}
+          title={`Hintergrund wechseln zu ${nextBgKey} (B)`}
+        >
+          BG: {preset.key}
+        </button>
+        <button
+          type="button"
+          className={`float-btn${spectrumMode ? " active" : ""}`}
+          onClick={() => setSpectrumMode((m) => !m)}
+          title="Spektrum-Modus ein/aus (S)"
+        >
+          SPEKTRUM
+        </button>
+      </div>
     </div>
   );
 }
