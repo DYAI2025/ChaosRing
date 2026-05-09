@@ -46,6 +46,7 @@ const BG_PRESETS = [
     gridColor: "rgba(244,239,231,0.035)",
     gridColorH: "rgba(244,239,231,0.028)",
     watermark: "rgba(244,239,231,0.045)",
+    accentSurface: "rgba(200,164,93,0.12)",
   },
   {
     key: "HELL",
@@ -67,6 +68,7 @@ const BG_PRESETS = [
     gridColor: "rgba(20,15,8,0.04)",
     gridColorH: "rgba(20,15,8,0.03)",
     watermark: "rgba(20,15,8,0.06)",
+    accentSurface: "rgba(122,69,0,0.12)",
   },
   {
     key: "OZEAN",
@@ -88,6 +90,7 @@ const BG_PRESETS = [
     gridColor: "rgba(120,180,255,0.03)",
     gridColorH: "rgba(120,180,255,0.025)",
     watermark: "rgba(180,220,255,0.045)",
+    accentSurface: "rgba(91,192,232,0.12)",
   },
 ];
 
@@ -118,6 +121,7 @@ const CSS = `
   --color-watermark: rgba(244,239,231,0.045);
   --panel-bg: rgba(1,1,4,0.56);
   --chip-bg: rgba(1,1,4,0.48);
+  --color-accent-surface: rgba(200,164,93,0.12);
   --font-display: "Inter Tight", "Neue Haas Grotesk Display", "Suisse Intl", "Arial Narrow", sans-serif;
   --font-body: "Inter", "Suisse Intl", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", "SF Mono", monospace;
@@ -225,7 +229,7 @@ body { margin: 0; }
 }
 .float-btn.active {
   border-color: var(--color-gold);
-  background: rgba(200,164,93,0.12);
+  background: var(--color-accent-surface);
   color: var(--color-gold);
 }
 .hud-top {
@@ -674,8 +678,10 @@ export default function DynamicChaosCirclePage() {
 
   // Keyboard shortcut handler (separate from THREE effect for clean closure access).
   useEffect(() => {
+    const INTERACTIVE = new Set(["INPUT", "BUTTON", "SELECT", "TEXTAREA"]);
     const onKeyDown = (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (INTERACTIVE.has(event.target.tagName) || event.target.isContentEditable) return;
       const key = event.key.toLowerCase();
       if (key === "r") {
         ripplesRef.current.length = 0;
@@ -744,6 +750,17 @@ export default function DynamicChaosCirclePage() {
     }
 
     linesRef.current = lines;
+
+    // Sync initial theme in case bgIndex/spectrumMode changed before mount.
+    const initPreset = BG_PRESETS[bgIndexRef.current];
+    const initBlending = initPreset.isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
+    lines.forEach((line, i) => {
+      if (!spectrumModeRef.current) {
+        line.material.color.setHex(ringLayerColor(i, initPreset.isLight));
+      }
+      line.material.blending = initBlending;
+      line.material.needsUpdate = true;
+    });
 
     for (let i = 0; i <= SEGMENTS; i += 1) {
       const angle = (i / SEGMENTS) * TAU;
@@ -961,6 +978,7 @@ export default function DynamicChaosCirclePage() {
     "--color-grid": preset.gridColor,
     "--color-grid-h": preset.gridColorH,
     "--color-watermark": preset.watermark,
+    "--color-accent-surface": preset.accentSurface,
   };
 
   return (
@@ -1044,6 +1062,7 @@ export default function DynamicChaosCirclePage() {
           className={`float-btn${focusMode ? " active" : ""}`}
           onClick={() => setFocusMode((m) => !m)}
           title="Fokus-Modus ein/aus (F)"
+          aria-pressed={focusMode}
         >
           {focusMode ? "UI AN" : "UI AUS"}
         </button>
@@ -1060,6 +1079,7 @@ export default function DynamicChaosCirclePage() {
           className={`float-btn${spectrumMode ? " active" : ""}`}
           onClick={() => setSpectrumMode((m) => !m)}
           title="Spektrum-Modus ein/aus (S)"
+          aria-pressed={spectrumMode}
         >
           SPEKTRUM
         </button>
