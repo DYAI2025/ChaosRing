@@ -675,6 +675,7 @@ export default function DynamicChaosCirclePage() {
   // Keyboard shortcut handler (separate from THREE effect for clean closure access).
   useEffect(() => {
     const onKeyDown = (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       const key = event.key.toLowerCase();
       if (key === "r") {
         ripplesRef.current.length = 0;
